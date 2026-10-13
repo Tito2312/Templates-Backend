@@ -1,4 +1,4 @@
-package Services;
+package service;
 
 import dto.BrandDto;
 import model.Brand;

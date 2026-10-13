@@ -1,4 +1,4 @@
-package Services;
+package service;
 
 import dto.UserDto;
 import model.User;
