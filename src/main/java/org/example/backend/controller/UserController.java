@@ -23,7 +23,7 @@ public class UserController {
             @RequestParam String username,
             @RequestParam String email,
             @RequestParam String password) {
-        return ResponseEntity.ok(userService.registerUser(username, email, password));
+        return ResponseEntity.ok(userService.register(username, email, password));
     }
 
     @PostMapping("/login")

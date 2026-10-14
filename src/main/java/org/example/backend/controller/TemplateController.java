@@ -53,4 +53,16 @@ public class TemplateController {
         templateService.deleteTemplate(id, userId);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<TemplateResponseDto> updateTemplate(
+            @PathVariable Long id,
+            @RequestBody TemplateRequestDto requestDto) {
+        try {
+            TemplateResponseDto updated = templateService.updateTemplate(id, requestDto);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

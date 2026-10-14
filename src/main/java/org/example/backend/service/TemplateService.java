@@ -77,6 +77,36 @@ public class TemplateService {
         });
     }
 
+    @Transactional
+    public TemplateResponseDto updateTemplate(Long id, TemplateRequestDto requestDto) {
+        Template template = templateRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Plantilla no encontrada con ID: " + id));
+
+        template.setTitle(requestDto.getTitle().trim());
+        template.setContent(requestDto.getContent());
+        template.setImageUrl(requestDto.getImageUrl());
+
+        if (requestDto.getBrandId() != null) {
+            Brand brand = brandRepository.findById(requestDto.getBrandId())
+                    .orElseThrow(() -> new RuntimeException("Marca no encontrada"));
+            template.setBrand(brand);
+        } else {
+            template.setBrand(null);
+        }
+
+        if (requestDto.getCategoryId() != null) {
+            Category category = categoryRepository.findById(requestDto.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
+            template.setCategory(category);
+        } else {
+            template.setCategory(null);
+        }
+
+        Template updatedTemplate = templateRepository.save(template);
+
+        return mapToResponseDto(updatedTemplate);
+    }
+
     private TemplateResponseDto mapToResponseDto(Template t) {
         return TemplateResponseDto.builder()
                 .id(t.getId())
