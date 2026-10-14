@@ -1,10 +1,10 @@
 package org.example.backend.controller;
 
+import org.example.backend.dto.AuthResponseDto;
 import org.example.backend.dto.LoginRequestDto;
+import org.example.backend.dto.RegisterRequestDto;
 import org.example.backend.dto.UserDto;
-import org.example.backend.model.User;
 import org.example.backend.service.UserService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,17 +20,22 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<UserDto> register(
-            @RequestParam String username,
-            @RequestParam String email,
-            @RequestParam String password) {
-        return ResponseEntity.ok(userService.register(username, email, password));
+    public ResponseEntity<AuthResponseDto> register(@RequestBody RegisterRequestDto registerRequest) {
+        AuthResponseDto response = userService.register(
+                registerRequest.getUsername(),
+                registerRequest.getEmail(),
+                registerRequest.getPassword()
+        );
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserDto> login(@RequestBody LoginRequestDto loginRequest) {
-        UserDto user = userService.login(loginRequest.getEmail(), loginRequest.getPassword());
-        return ResponseEntity.ok(user);
+    public ResponseEntity<AuthResponseDto> login(@RequestBody LoginRequestDto loginRequest) {
+        AuthResponseDto response = userService.login(
+                loginRequest.getEmail(),
+                loginRequest.getPassword()
+        );
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
