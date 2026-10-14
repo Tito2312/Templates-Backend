@@ -1,7 +1,7 @@
-package controller;
+package org.example.backend.controller;
 
-import dto.CategoryDto;
-import service.CategoryService;
+import org.example.backend.dto.CategoryDto;
+import org.example.backend.service.CategoryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

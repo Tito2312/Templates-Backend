@@ -1,10 +1,10 @@
-package service;
+package org.example.backend.service;
 
-import dto.CategoryDto;
-import model.Category;
-import model.User;
-import repository.CategoryRepository;
-import repository.UserRepository;
+import org.example.backend.dto.CategoryDto;
+import org.example.backend.model.Category;
+import org.example.backend.model.User;
+import org.example.backend.repository.CategoryRepository;
+import org.example.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

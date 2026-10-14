@@ -1,8 +1,8 @@
-package controller;
+package org.example.backend.controller;
 
-import dto.TemplateRequestDto;
-import dto.TemplateResponseDto;
-import service.TemplateService;
+import org.example.backend.dto.TemplateRequestDto;
+import org.example.backend.dto.TemplateResponseDto;
+import org.example.backend.service.TemplateService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

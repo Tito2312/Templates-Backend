@@ -1,10 +1,10 @@
-package service;
+package org.example.backend.service;
 
-import dto.BrandDto;
-import model.Brand;
-import model.User;
-import repository.BrandRepository;
-import repository.UserRepository;
+import org.example.backend.dto.BrandDto;
+import org.example.backend.model.Brand;
+import org.example.backend.model.User;
+import org.example.backend.repository.BrandRepository;
+import org.example.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

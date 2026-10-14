@@ -1,7 +1,7 @@
-package controller;
+package org.example.backend.controller;
 
-import dto.UserDto;
-import service.UserService;
+import org.example.backend.dto.UserDto;
+import org.example.backend.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
