@@ -1,7 +1,7 @@
-package controller;
+package org.example.backend.controller;
 
-import dto.BrandDto;
-import service.BrandService;
+import org.example.backend.dto.BrandDto;
+import org.example.backend.service.BrandService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

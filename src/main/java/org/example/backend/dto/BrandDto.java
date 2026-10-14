@@ -1,4 +1,4 @@
-package dto;
+package org.example.backend.dto;
 
 import lombok.*;
 
@@ -6,7 +6,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CategoryDto {
+public class BrandDto {
     private Long id;
     private String name;
 }
