@@ -27,11 +27,13 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<User> login(@RequestParam String email, @RequestParam String password) {
-        return userService.findByEmail(email)
-                .filter(u -> u.getPassword().equals(password))
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+    public ResponseEntity<?> login(@RequestParam String email, @RequestParam String password) {
+        try {
+            UserDto user = userService.login(email, password);
+            return ResponseEntity.ok(user);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
     }
 
     @GetMapping("/{id}")

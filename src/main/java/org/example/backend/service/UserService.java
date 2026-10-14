@@ -21,7 +21,7 @@ public class UserService {
         if (userRepository.findByUsername(username).isPresent()) {
             throw new RuntimeException("El nombre de usuario ya está registrado");
         }
-        if (userRepository.findByEmail(email).isPresent()) {
+        if (userRepository.findByEmailIgnoreCase(email).isPresent()) {
             throw new RuntimeException("El correo ya está registrado");
         }
 
@@ -39,6 +39,20 @@ public class UserService {
     public UserDto getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        return new UserDto(user.getId(), user.getUsername(), user.getEmail());
+    }
+
+    @Transactional(readOnly = true)
+    public UserDto login(String email, String password) {
+        String cleanEmail = email != null ? email.trim() : "";
+
+        User user = userRepository.findByEmailIgnoreCase(cleanEmail)
+                .orElseThrow(() -> new RuntimeException("Credenciales inválidas"));
+
+        if (!user.getPassword().equals(password)) {
+            throw new RuntimeException("Credenciales inválidas");
+        }
+
         return new UserDto(user.getId(), user.getUsername(), user.getEmail());
     }
 }
