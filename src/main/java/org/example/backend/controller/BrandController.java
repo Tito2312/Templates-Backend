@@ -19,12 +19,18 @@ public class BrandController {
     }
 
     @GetMapping
-    public ResponseEntity<List<BrandDto>> getBrands(@RequestParam Long userId) {
-        return ResponseEntity.ok(brandService.getBrandsByUser(userId));
+    public ResponseEntity<List<BrandDto>> getBrands() {
+        return ResponseEntity.ok(brandService.getBrands());
     }
 
     @PostMapping
-    public ResponseEntity<BrandDto> createBrand(@RequestParam Long userId, @RequestParam String name) {
-        return ResponseEntity.ok(brandService.createBrand(userId, name));
+    public ResponseEntity<BrandDto> createBrand(@RequestBody BrandDto brandDto) {
+        return ResponseEntity.ok(brandService.createBrand(brandDto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteBrand(@PathVariable Long id) {
+        brandService.deleteBrand(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -29,4 +29,5 @@ public interface TemplateRepository extends JpaRepository<Template, Long> {
     @Query("UPDATE Template t SET t.usageCount = t.usageCount + 1 WHERE t.id = :id AND t.user.id = :userId")
     int incrementUsageCount(@Param("id") Long id, @Param("userId") Long userId);
 
+    List<Template> findByUserId(Long id);
 }

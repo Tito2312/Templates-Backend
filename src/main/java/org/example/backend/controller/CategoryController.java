@@ -19,12 +19,18 @@ public class CategoryController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CategoryDto>> getCategories(@RequestParam Long userId) {
-        return ResponseEntity.ok(categoryService.getCategoriesByUser(userId));
+    public ResponseEntity<List<CategoryDto>> getCategories() {
+        return ResponseEntity.ok(categoryService.getCategories());
     }
 
     @PostMapping
-    public ResponseEntity<CategoryDto> createCategory(@RequestParam Long userId, @RequestParam String name) {
-        return ResponseEntity.ok(categoryService.createCategory(userId, name));
+    public ResponseEntity<CategoryDto> createCategory(@RequestBody CategoryDto categoryDto) {
+        return ResponseEntity.ok(categoryService.createCategory(categoryDto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
+        categoryService.deleteCategory(id);
+        return ResponseEntity.noContent().build();
     }
 }

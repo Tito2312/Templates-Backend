@@ -5,10 +5,12 @@ import org.example.backend.model.Category;
 import org.example.backend.model.User;
 import org.example.backend.repository.CategoryRepository;
 import org.example.backend.repository.UserRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CategoryService {
@@ -21,24 +23,50 @@ public class CategoryService {
         this.userRepository = userRepository;
     }
 
+    private User getAuthenticatedUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
+    }
+
     @Transactional(readOnly = true)
-    public List<CategoryDto> getCategoriesByUser(Long userId) {
-        return categoryRepository.findByUserIdOrderByNameAsc(userId).stream()
-                .map(c -> new CategoryDto(c.getId(), c.getName()))
-                .toList();
+    public List<CategoryDto> getCategories() {
+        User currentUser = getAuthenticatedUser();
+        return categoryRepository.findByUserId(currentUser.getId())
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
     }
 
     @Transactional
-    public CategoryDto createCategory(Long userId, String name) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    public CategoryDto createCategory(CategoryDto categoryDto) {
+        User currentUser = getAuthenticatedUser();
 
-        Category category = Category.builder()
-                .user(user)
-                .name(name)
-                .build();
+        Category category = new Category();
+        category.setName(categoryDto.getName().trim());
+        category.setUser(currentUser);
 
         Category saved = categoryRepository.save(category);
-        return new CategoryDto(saved.getId(), saved.getName());
+        return mapToDto(saved);
+    }
+
+    @Transactional
+    public void deleteCategory(Long id) {
+        User currentUser = getAuthenticatedUser();
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + id));
+
+        if (!category.getUser().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("No tienes permisos para eliminar esta categoría");
+        }
+
+        categoryRepository.delete(category);
+    }
+
+    private CategoryDto mapToDto(Category category) {
+        return CategoryDto.builder()
+                .id(category.getId())
+                .name(category.getName())
+                .build();
     }
 }
