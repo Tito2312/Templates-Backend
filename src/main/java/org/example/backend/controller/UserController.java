@@ -1,5 +1,6 @@
 package org.example.backend.controller;
 
+import org.example.backend.dto.LoginRequestDto;
 import org.example.backend.dto.UserDto;
 import org.example.backend.model.User;
 import org.example.backend.service.UserService;
@@ -27,13 +28,9 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestParam String email, @RequestParam String password) {
-        try {
-            UserDto user = userService.login(email, password);
-            return ResponseEntity.ok(user);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
-        }
+    public ResponseEntity<UserDto> login(@RequestBody LoginRequestDto loginRequest) {
+        UserDto user = userService.login(loginRequest.getEmail(), loginRequest.getPassword());
+        return ResponseEntity.ok(user);
     }
 
     @GetMapping("/{id}")
