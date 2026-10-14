@@ -1,5 +1,6 @@
 package org.example.backend.service;
 
+import org.apache.el.stream.Stream;
 import org.example.backend.dto.UserDto;
 import org.example.backend.model.User;
 import org.example.backend.repository.UserRepository;

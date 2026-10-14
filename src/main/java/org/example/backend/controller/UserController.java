@@ -1,7 +1,9 @@
 package org.example.backend.controller;
 
 import org.example.backend.dto.UserDto;
+import org.example.backend.model.User;
 import org.example.backend.service.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +24,14 @@ public class UserController {
             @RequestParam String email,
             @RequestParam String password) {
         return ResponseEntity.ok(userService.registerUser(username, email, password));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<User> login(@RequestParam String email, @RequestParam String password) {
+        return userService.findByEmail(email)
+                .filter(u -> u.getPassword().equals(password))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
 
     @GetMapping("/{id}")
