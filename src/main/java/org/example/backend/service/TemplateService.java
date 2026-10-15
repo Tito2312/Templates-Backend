@@ -1,5 +1,6 @@
 package org.example.backend.service;
 
+import org.example.backend.dto.PageResponseDto;
 import org.example.backend.dto.TemplateRequestDto;
 import org.example.backend.dto.TemplateResponseDto;
 import org.example.backend.model.Brand;
@@ -10,6 +11,10 @@ import org.example.backend.repository.BrandRepository;
 import org.example.backend.repository.CategoryRepository;
 import org.example.backend.repository.TemplateRepository;
 import org.example.backend.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,18 +48,39 @@ public class TemplateService {
     }
 
     @Transactional(readOnly = true)
-    public List<TemplateResponseDto> searchTemplates(String query, Long brandId, Long categoryId) {
-        User currentUser = getAuthenticatedUser();
-        List<Template> templates = templateRepository.findByUserId(currentUser.getId());
+    public PageResponseDto<TemplateResponseDto> searchTemplates(
+            String query,
+            String brandName,
+            String categoryName,
+            int page,
+            int size) {
 
-        return templates.stream()
-                .filter(t -> (query == null || query.isBlank()
-                        || t.getTitle().toLowerCase().contains(query.toLowerCase())
-                        || t.getContent().toLowerCase().contains(query.toLowerCase())))
-                .filter(t -> (brandId == null || (t.getBrand() != null && t.getBrand().getId().equals(brandId))))
-                .filter(t -> (categoryId == null || (t.getCategory() != null && t.getCategory().getId().equals(categoryId))))
+        Long userId = getAuthenticatedUserId();
+
+        // Ordenar por mayor número de usos primero, y luego por fecha de actualización
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "usageCount")
+                        .and(Sort.by(Sort.Direction.DESC, "updatedAt"))
+        );
+
+        Page<Template> templatePage = templateRepository.searchTemplates(
+                userId, query, brandName, categoryName, pageable
+        );
+
+        List<TemplateResponseDto> content = templatePage.getContent().stream()
                 .map(this::mapToResponseDto)
                 .collect(Collectors.toList());
+
+        return PageResponseDto.<TemplateResponseDto>builder()
+                .content(content)
+                .pageNumber(templatePage.getNumber())
+                .pageSize(templatePage.getSize())
+                .totalElements(templatePage.getTotalElements())
+                .totalPages(templatePage.getTotalPages())
+                .isLast(templatePage.isLast())
+                .build();
     }
 
     @Transactional
@@ -153,5 +179,19 @@ public class TemplateService {
                 .createdAt(template.getCreatedAt())
                 .updatedAt(template.getUpdatedAt())
                 .build();
+    }
+
+    private Long getAuthenticatedUserId() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if (principal == null) {
+            throw new RuntimeException("No hay un usuario autenticado en la sesión");
+        }
+
+        String email = principal.toString();
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        return user.getId();
     }
 }

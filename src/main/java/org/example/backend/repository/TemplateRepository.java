@@ -1,8 +1,9 @@
 package org.example.backend.repository;
 
 import org.example.backend.model.Template;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -12,22 +13,17 @@ import java.util.List;
 @Repository
 public interface TemplateRepository extends JpaRepository<Template, Long> {
 
-    @Query("SELECT t FROM Template t " +
-            "WHERE t.user.id = :userId " +
-            "AND (:brandId IS NULL OR t.brand.id = :brandId) " +
-            "AND (:categoryId IS NULL OR t.category.id = :categoryId) " +
-            "AND (:query IS NULL OR :query = '' OR " +
-            "     LOWER(t.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-            "     LOWER(t.content) LIKE LOWER(CONCAT('%', :query, '%'))) " +
-            "ORDER BY t.usageCount DESC, t.updatedAt DESC")
-    List<Template> searchTemplates(@Param("userId") Long userId,
-                                   @Param("query") String query,
-                                   @Param("brandId") Long brandId,
-                                   @Param("categoryId") Long categoryId);
+    @Query("SELECT t FROM Template t WHERE t.user.id = :userId " +
+            "AND (:query IS NULL OR :query = '' OR LOWER(t.title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(t.content) LIKE LOWER(CONCAT('%', :query, '%'))) " +
+            "AND (:brandName IS NULL OR :brandName = '' OR t.brand.name = :brandName OR CAST(t.brand.id AS string) = :brandName) " +
+            "AND (:categoryName IS NULL OR :categoryName = '' OR t.category.name = :categoryName OR CAST(t.category.id AS string) = :categoryName)")
+    Page<Template> searchTemplates(
+            @Param("userId") Long userId,
+            @Param("query") String query,
+            @Param("brandName") String brandName,
+            @Param("categoryName") String categoryName,
+            Pageable pageable
+    );
 
-    @Modifying
-    @Query("UPDATE Template t SET t.usageCount = t.usageCount + 1 WHERE t.id = :id AND t.user.id = :userId")
-    int incrementUsageCount(@Param("id") Long id, @Param("userId") Long userId);
-
-    List<Template> findByUserId(Long id);
+    List<Template> findByUserId(Long userId);
 }

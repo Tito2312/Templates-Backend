@@ -1,5 +1,6 @@
 package org.example.backend.controller;
 
+import org.example.backend.dto.PageResponseDto;
 import org.example.backend.dto.TemplateRequestDto;
 import org.example.backend.dto.TemplateResponseDto;
 import org.example.backend.service.TemplateService;
@@ -18,12 +19,16 @@ public class TemplateController {
         this.templateService = templateService;
     }
 
-    @GetMapping({"", "/search"})
-    public ResponseEntity<List<TemplateResponseDto>> getTemplates(
-            @RequestParam(required = false) String query,
-            @RequestParam(required = false) Long brandId,
-            @RequestParam(required = false) Long categoryId) {
-        return ResponseEntity.ok(templateService.searchTemplates(query, brandId, categoryId));
+    @GetMapping
+    public ResponseEntity<PageResponseDto<TemplateResponseDto>> getTemplates(
+            @RequestParam(required = false, defaultValue = "") String query,
+            @RequestParam(required = false, defaultValue = "") String brand,
+            @RequestParam(required = false, defaultValue = "") String category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "9") int size) {
+
+        PageResponseDto<TemplateResponseDto> response = templateService.searchTemplates(query, brand, category, page, size);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping
