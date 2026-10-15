@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "*")
 public class UserController {
 
     private final UserService userService;
@@ -20,22 +19,39 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponseDto> register(@RequestBody RegisterRequestDto registerRequest) {
-        AuthResponseDto response = userService.register(
-                registerRequest.getUsername(),
-                registerRequest.getEmail(),
-                registerRequest.getPassword()
-        );
-        return ResponseEntity.ok(response);
+    public ResponseEntity<?> register(@RequestBody RegisterRequestDto registerRequest) {
+        try {
+            System.out.println("--> [REGISTER] Intentando registrar a: " + registerRequest.getEmail());
+
+            AuthResponseDto response = userService.register(
+                    registerRequest.getUsername(),
+                    registerRequest.getEmail(),
+                    registerRequest.getPassword()
+            );
+
+            System.out.println("--> [REGISTER SUCCESS] Token generado: " +
+                    (response != null && response.getToken() != null));
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("--> [REGISTER ERROR]: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDto> login(@RequestBody LoginRequestDto loginRequest) {
-        AuthResponseDto response = userService.login(
-                loginRequest.getEmail(),
-                loginRequest.getPassword()
-        );
-        return ResponseEntity.ok(response);
+    public ResponseEntity<?> login(@RequestBody LoginRequestDto loginRequest) {
+        try {
+            AuthResponseDto response = userService.login(
+                    loginRequest.getEmail(),
+                    loginRequest.getPassword()
+            );
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("--> [LOGIN ERROR]: " + e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @GetMapping("/{id}")

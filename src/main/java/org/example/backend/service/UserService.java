@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class UserService {
 
-    // Inyectamos JwtTokenProvider en UserService
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -27,8 +26,8 @@ public class UserService {
     public AuthResponseDto register(String username, String email, String rawPassword) {
         String cleanEmail = email != null ? email.trim().toLowerCase() : "";
 
-        if (userRepository.findByEmailIgnoreCase(cleanEmail).isPresent()) {
-            throw new RuntimeException("El correo ya se encuentra registrado");
+        if (userRepository.existsByEmailIgnoreCase(cleanEmail)) {
+            throw new RuntimeException("El correo ya está registrado");
         }
 
         User user = new User();
@@ -37,15 +36,18 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(rawPassword));
 
         User savedUser = userRepository.save(user);
+
         UserDto userDto = new UserDto(savedUser.getId(), savedUser.getUsername(), savedUser.getEmail());
 
+        // Uso correcto de jwtTokenProvider con ambos parámetros (id, email)
         String token = jwtTokenProvider.generateToken(savedUser.getId(), savedUser.getEmail());
+
         return new AuthResponseDto(token, userDto);
     }
 
     @Transactional(readOnly = true)
     public AuthResponseDto login(String email, String rawPassword) {
-        String cleanEmail = email != null ? email.trim() : "";
+        String cleanEmail = email != null ? email.trim().toLowerCase() : "";
 
         User user = userRepository.findByEmailIgnoreCase(cleanEmail)
                 .orElseThrow(() -> new RuntimeException("Credenciales inválidas"));
