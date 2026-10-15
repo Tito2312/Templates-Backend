@@ -55,9 +55,13 @@ public class TemplateService {
             int page,
             int size) {
 
+        if (query != null && query.trim().isEmpty()) query = null;
+        if (brandName != null && brandName.trim().isEmpty()) brandName = null;
+        if (categoryName != null && categoryName.trim().isEmpty()) categoryName = null;
+
         Long userId = getAuthenticatedUserId();
 
-        // Ordenar por mayor número de usos primero, y luego por fecha de actualización
+        // 2. Ordenar por mayor número de usos primero, y luego por fecha de actualización
         Pageable pageable = PageRequest.of(
                 page,
                 size,
@@ -65,6 +69,7 @@ public class TemplateService {
                         .and(Sort.by(Sort.Direction.DESC, "updatedAt"))
         );
 
+        // 3. Ejecutar la búsqueda con los parámetros limpios
         Page<Template> templatePage = templateRepository.searchTemplates(
                 userId, query, brandName, categoryName, pageable
         );

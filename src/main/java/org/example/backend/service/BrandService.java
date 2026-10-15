@@ -44,6 +44,7 @@ public class BrandService {
 
         Brand brand = new Brand();
         brand.setName(brandDto.getName().trim());
+        brand.setColorHex(brandDto.getColorHex());
         brand.setUser(currentUser);
 
         Brand saved = brandRepository.save(brand);
@@ -67,6 +68,7 @@ public class BrandService {
         return BrandDto.builder()
                 .id(brand.getId())
                 .name(brand.getName())
+                .colorHex(brand.getColorHex())
                 .build();
     }
 }

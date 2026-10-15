@@ -28,4 +28,7 @@ public class Brand {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(length = 7)
+    private String colorHex;
 }
