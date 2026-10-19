@@ -50,6 +50,16 @@ public class CategoryService {
         return mapToDto(saved);
     }
 
+    public CategoryDto updateCategory(Long id, CategoryDto categoryDto) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + id));
+
+        category.setName(categoryDto.getName());
+        Category updated = categoryRepository.save(category);
+
+        return new CategoryDto(updated.getId(), updated.getName());
+    }
+
     @Transactional
     public void deleteCategory(Long id) {
         User currentUser = getAuthenticatedUser();
