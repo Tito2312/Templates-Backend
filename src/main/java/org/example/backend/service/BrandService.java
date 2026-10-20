@@ -51,6 +51,19 @@ public class BrandService {
         return mapToDto(saved);
     }
 
+    public BrandDto updateBrand(Long id, BrandDto brandDto) {
+        Brand brand = brandRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Marca no encontrada con ID: " + id));
+
+        brand.setName(brandDto.getName());
+        if (brandDto.getColorHex() != null) {
+            brand.setColorHex(brandDto.getColorHex());
+        }
+
+        Brand updated = brandRepository.save(brand);
+        return new BrandDto(updated.getId(), updated.getName(), updated.getColorHex());
+    }
+
     @Transactional
     public void deleteBrand(Long id) {
         User currentUser = getAuthenticatedUser();
