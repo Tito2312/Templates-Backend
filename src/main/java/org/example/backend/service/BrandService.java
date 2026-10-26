@@ -1,12 +1,12 @@
 package org.example.backend.service;
 
 import org.example.backend.dto.BrandDto;
-import org.example.backend.exception.BadRequestException;
-import org.example.backend.exception.ForbiddenOperationException;
+import org.example.backend.exception.ConflictException;
 import org.example.backend.exception.ResourceNotFoundException;
 import org.example.backend.model.Brand;
 import org.example.backend.model.User;
 import org.example.backend.repository.BrandRepository;
+import org.example.backend.repository.TemplateRepository;
 import org.example.backend.repository.UserRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -15,27 +15,32 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Marcas del catálogo global. La autorización (solo ROLE_ADMIN escribe)
+ * se aplica en SecurityConfig; user_id solo registra quién la creó.
+ */
 @Service
 public class BrandService {
 
     private final BrandRepository brandRepository;
     private final UserRepository userRepository;
+    private final TemplateRepository templateRepository;
 
-    public BrandService(BrandRepository brandRepository, UserRepository userRepository) {
+    public BrandService(BrandRepository brandRepository, UserRepository userRepository, TemplateRepository templateRepository) {
         this.brandRepository = brandRepository;
         this.userRepository = userRepository;
+        this.templateRepository = templateRepository;
     }
 
     private User getAuthenticatedUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario autenticado no encontrado"));
     }
 
     @Transactional(readOnly = true)
     public List<BrandDto> getBrands() {
-        User currentUser = getAuthenticatedUser();
-        return brandRepository.findByUserId(currentUser.getId())
+        return brandRepository.findAllByOrderByNameAsc()
                 .stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
@@ -43,45 +48,49 @@ public class BrandService {
 
     @Transactional
     public BrandDto createBrand(BrandDto brandDto) {
-        User currentUser = getAuthenticatedUser();
+        String name = brandDto.getName().trim();
+        if (brandRepository.existsByNameIgnoreCase(name)) {
+            throw new ConflictException("Ya existe una marca con el nombre \"" + name + "\"");
+        }
 
         Brand brand = new Brand();
-        brand.setName(brandDto.getName().trim());
+        brand.setName(name);
         brand.setColorHex(brandDto.getColorHex());
-        brand.setUser(currentUser);
+        brand.setUser(getAuthenticatedUser());
 
         Brand saved = brandRepository.save(brand);
         return mapToDto(saved);
     }
 
+    @Transactional
     public BrandDto updateBrand(Long id, BrandDto brandDto) {
         Brand brand = brandRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Marca no encontrada con ID: " + id));
 
-        // Antes el controlador devolvía 400 ante cualquier error; se mantiene para nombre vacío
-        if (brandDto.getName() == null || brandDto.getName().isBlank()) {
-            throw new BadRequestException("El nombre es obligatorio");
+        String name = brandDto.getName().trim();
+        if (brandRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
+            throw new ConflictException("Ya existe una marca con el nombre \"" + name + "\"");
         }
 
-        brand.setName(brandDto.getName());
+        brand.setName(name);
         if (brandDto.getColorHex() != null) {
             brand.setColorHex(brandDto.getColorHex());
         }
 
         Brand updated = brandRepository.save(brand);
-        return new BrandDto(updated.getId(), updated.getName(), updated.getColorHex());
+        return mapToDto(updated);
     }
 
+    /**
+     * Elimina la marca conservando sus plantillas: quedan sin marca
+     * y siguen visibles en "Todas las marcas".
+     */
     @Transactional
     public void deleteBrand(Long id) {
-        User currentUser = getAuthenticatedUser();
         Brand brand = brandRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Marca no encontrada con ID: " + id));
 
-        if (!brand.getUser().getId().equals(currentUser.getId())) {
-            throw new ForbiddenOperationException("No tienes permisos para eliminar esta marca");
-        }
-
+        templateRepository.unlinkBrand(brand.getId());
         brandRepository.delete(brand);
     }
 

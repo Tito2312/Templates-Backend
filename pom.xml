@@ -57,6 +57,12 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- BD en memoria solo para pruebas de repositorio (no se usa en ejecución) -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Validación de DTOs (@Valid, @NotBlank...) -->
         <dependency>

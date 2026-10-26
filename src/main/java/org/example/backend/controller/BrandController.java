@@ -1,5 +1,6 @@
 package org.example.backend.controller;
 
+import jakarta.validation.Valid;
 import org.example.backend.dto.BrandDto;
 import org.example.backend.service.BrandService;
 import org.springframework.http.ResponseEntity;
@@ -23,12 +24,12 @@ public class BrandController {
     }
 
     @PostMapping
-    public ResponseEntity<BrandDto> createBrand(@RequestBody BrandDto brandDto) {
+    public ResponseEntity<BrandDto> createBrand(@Valid @RequestBody BrandDto brandDto) {
         return ResponseEntity.ok(brandService.createBrand(brandDto));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BrandDto> updateBrand(@PathVariable Long id, @RequestBody BrandDto brandDto) {
+    public ResponseEntity<BrandDto> updateBrand(@PathVariable Long id, @Valid @RequestBody BrandDto brandDto) {
         return ResponseEntity.ok(brandService.updateBrand(id, brandDto));
     }
 

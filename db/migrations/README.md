@@ -14,8 +14,12 @@ Cada cambio de esquema se versiona aquí y se ejecuta a mano en el SQL Editor de
 2. Comprobar las consultas de verificación del final de cada script.
 3. Desplegar el backend.
 
+> El SQL Editor de Supabase solo muestra el resultado de la **última** sentencia ejecutada.
+> Para ver una vista previa o una verificación, selecciona solo esa consulta y ejecútala sola.
+
 ## Registro
 
 | Script | Versión | Descripción | Ejecutado en producción |
 |---|---|---|---|
-| `V1_0_4_001__add_user_role.sql` | 1.0.4 | Columna `users.role` (`ROLE_USER`/`ROLE_ADMIN`) y admin inicial | Pendiente |
+| `V1_0_4_001__add_user_role.sql` | 1.0.4 | Columna `users.role` (`ROLE_USER`/`ROLE_ADMIN`) y admin inicial | Parcial: la columna se creó a mano. Ejecutar el script completo (idempotente) para el CHECK y el admin |
+| `V1_0_4_002__global_catalog.sql` | 1.0.4 | Fusión de marcas/categorías duplicadas e índices únicos de nombre | Pendiente (justo antes del despliegue, con backup) |

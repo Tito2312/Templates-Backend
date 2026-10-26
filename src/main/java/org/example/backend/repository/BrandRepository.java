@@ -8,7 +8,10 @@ import java.util.List;
 
 @Repository
 public interface BrandRepository extends JpaRepository<Brand, Long> {
-    List<Brand> findByUserIdOrderByNameAsc(Long userId);
+    // Catálogo global: todas las marcas, sin filtrar por creador
+    List<Brand> findAllByOrderByNameAsc();
 
-    List<Brand> findByUserId(Long id);
+    boolean existsByNameIgnoreCase(String name);
+
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 }

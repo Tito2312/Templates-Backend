@@ -1,5 +1,6 @@
 package org.example.backend.controller;
 
+import jakarta.validation.Valid;
 import org.example.backend.dto.PageResponseDto;
 import org.example.backend.dto.TemplateRequestDto;
 import org.example.backend.dto.TemplateResponseDto;
@@ -32,14 +33,14 @@ public class TemplateController {
     }
 
     @PostMapping
-    public ResponseEntity<TemplateResponseDto> createTemplate(@RequestBody TemplateRequestDto requestDto) {
+    public ResponseEntity<TemplateResponseDto> createTemplate(@Valid @RequestBody TemplateRequestDto requestDto) {
         return ResponseEntity.ok(templateService.createTemplate(requestDto));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<TemplateResponseDto> updateTemplate(
             @PathVariable Long id,
-            @RequestBody TemplateRequestDto requestDto) {
+            @Valid @RequestBody TemplateRequestDto requestDto) {
         return ResponseEntity.ok(templateService.updateTemplate(id, requestDto));
     }
 

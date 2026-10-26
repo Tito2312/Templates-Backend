@@ -200,6 +200,21 @@ class SecurityRulesTest {
     }
 
     @Test
+    void catalogPayloadsAreValidated() throws Exception {
+        mockMvc.perform(as(adminToken, json(post("/api/brands"), "{\"name\":\"  \"}")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("El nombre de la marca es obligatorio"));
+        mockMvc.perform(as(adminToken, json(post("/api/brands"), "{\"name\":\"X\",\"colorHex\":\"rojo\"}")))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(as(adminToken, json(put("/api/categories/1"), "{\"name\":\"\"}")))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(as(adminToken, json(post("/api/templates"), "{\"title\":\"\",\"content\":\"c\"}")))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(as(adminToken, json(put("/api/templates/1"), "{\"title\":\"t\"}")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void notFoundIsMappedTo404() throws Exception {
         when(brandService.updateBrand(eq(404L), any())).thenThrow(new ResourceNotFoundException("Marca no encontrada con ID: 404"));
 

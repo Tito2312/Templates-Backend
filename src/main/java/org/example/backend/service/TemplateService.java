@@ -3,7 +3,6 @@ package org.example.backend.service;
 import org.example.backend.dto.PageResponseDto;
 import org.example.backend.dto.TemplateRequestDto;
 import org.example.backend.dto.TemplateResponseDto;
-import org.example.backend.exception.ForbiddenOperationException;
 import org.example.backend.exception.ResourceNotFoundException;
 import org.example.backend.model.Brand;
 import org.example.backend.model.Category;
@@ -24,8 +23,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Plantillas del catálogo global: todos los usuarios autenticados las consultan y copian;
+ * crear, editar y eliminar está restringido a ROLE_ADMIN en SecurityConfig.
+ * user_id solo registra quién creó la plantilla.
+ */
 @Service
 public class TemplateService {
+
+    private static final int MAX_PAGE_SIZE = 50;
 
     private final TemplateRepository templateRepository;
     private final UserRepository userRepository;
@@ -46,7 +52,7 @@ public class TemplateService {
     private User getAuthenticatedUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario autenticado no encontrado"));
     }
 
     @Transactional(readOnly = true)
@@ -61,19 +67,21 @@ public class TemplateService {
         if (brandName != null && brandName.trim().isEmpty()) brandName = null;
         if (categoryName != null && categoryName.trim().isEmpty()) categoryName = null;
 
-        Long userId = getAuthenticatedUserId();
+        // Paginación acotada para evitar consultas enormes
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
 
         // 2. Ordenar por mayor número de usos primero, y luego por fecha de actualización
         Pageable pageable = PageRequest.of(
-                page,
-                size,
+                safePage,
+                safeSize,
                 Sort.by(Sort.Direction.DESC, "usageCount")
                         .and(Sort.by(Sort.Direction.DESC, "updatedAt"))
         );
 
         // 3. Ejecutar la búsqueda con los parámetros limpios
         Page<Template> templatePage = templateRepository.searchTemplates(
-                userId, query, brandName, categoryName, pageable
+                query, brandName, categoryName, pageable
         );
 
         List<TemplateResponseDto> content = templatePage.getContent().stream()
@@ -119,13 +127,8 @@ public class TemplateService {
 
     @Transactional
     public TemplateResponseDto updateTemplate(Long id, TemplateRequestDto requestDto) {
-        User currentUser = getAuthenticatedUser();
         Template template = templateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Plantilla no encontrada con ID: " + id));
-
-        if (!template.getUser().getId().equals(currentUser.getId())) {
-            throw new ForbiddenOperationException("No tienes permisos para modificar esta plantilla");
-        }
 
         template.setTitle(requestDto.getTitle().trim());
         template.setContent(requestDto.getContent());
@@ -153,13 +156,8 @@ public class TemplateService {
 
     @Transactional
     public void deleteTemplate(Long id) {
-        User currentUser = getAuthenticatedUser();
         Template template = templateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Plantilla no encontrada con ID: " + id));
-
-        if (!template.getUser().getId().equals(currentUser.getId())) {
-            throw new ForbiddenOperationException("No tienes permisos para eliminar esta plantilla");
-        }
 
         templateRepository.delete(template);
     }
@@ -186,19 +184,5 @@ public class TemplateService {
                 .createdAt(template.getCreatedAt())
                 .updatedAt(template.getUpdatedAt())
                 .build();
-    }
-
-    private Long getAuthenticatedUserId() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        if (principal == null) {
-            throw new RuntimeException("No hay un usuario autenticado en la sesión");
-        }
-
-        String email = principal.toString();
-        User user = userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        return user.getId();
     }
 }
