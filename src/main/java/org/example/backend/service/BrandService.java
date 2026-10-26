@@ -1,6 +1,9 @@
 package org.example.backend.service;
 
 import org.example.backend.dto.BrandDto;
+import org.example.backend.exception.BadRequestException;
+import org.example.backend.exception.ForbiddenOperationException;
+import org.example.backend.exception.ResourceNotFoundException;
 import org.example.backend.model.Brand;
 import org.example.backend.model.User;
 import org.example.backend.repository.BrandRepository;
@@ -53,7 +56,12 @@ public class BrandService {
 
     public BrandDto updateBrand(Long id, BrandDto brandDto) {
         Brand brand = brandRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Marca no encontrada con ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Marca no encontrada con ID: " + id));
+
+        // Antes el controlador devolvía 400 ante cualquier error; se mantiene para nombre vacío
+        if (brandDto.getName() == null || brandDto.getName().isBlank()) {
+            throw new BadRequestException("El nombre es obligatorio");
+        }
 
         brand.setName(brandDto.getName());
         if (brandDto.getColorHex() != null) {
@@ -68,10 +76,10 @@ public class BrandService {
     public void deleteBrand(Long id) {
         User currentUser = getAuthenticatedUser();
         Brand brand = brandRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Marca no encontrada con ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Marca no encontrada con ID: " + id));
 
         if (!brand.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("No tienes permisos para eliminar esta marca");
+            throw new ForbiddenOperationException("No tienes permisos para eliminar esta marca");
         }
 
         brandRepository.delete(brand);

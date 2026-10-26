@@ -3,6 +3,8 @@ package org.example.backend.service;
 import org.example.backend.dto.PageResponseDto;
 import org.example.backend.dto.TemplateRequestDto;
 import org.example.backend.dto.TemplateResponseDto;
+import org.example.backend.exception.ForbiddenOperationException;
+import org.example.backend.exception.ResourceNotFoundException;
 import org.example.backend.model.Brand;
 import org.example.backend.model.Category;
 import org.example.backend.model.Template;
@@ -101,13 +103,13 @@ public class TemplateService {
 
         if (requestDto.getBrandId() != null) {
             Brand brand = brandRepository.findById(requestDto.getBrandId())
-                    .orElseThrow(() -> new RuntimeException("Marca no encontrada"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Marca no encontrada"));
             template.setBrand(brand);
         }
 
         if (requestDto.getCategoryId() != null) {
             Category category = categoryRepository.findById(requestDto.getCategoryId())
-                    .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
             template.setCategory(category);
         }
 
@@ -119,10 +121,10 @@ public class TemplateService {
     public TemplateResponseDto updateTemplate(Long id, TemplateRequestDto requestDto) {
         User currentUser = getAuthenticatedUser();
         Template template = templateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Plantilla no encontrada con ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Plantilla no encontrada con ID: " + id));
 
         if (!template.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("No tienes permisos para modificar esta plantilla");
+            throw new ForbiddenOperationException("No tienes permisos para modificar esta plantilla");
         }
 
         template.setTitle(requestDto.getTitle().trim());
@@ -131,7 +133,7 @@ public class TemplateService {
 
         if (requestDto.getBrandId() != null) {
             Brand brand = brandRepository.findById(requestDto.getBrandId())
-                    .orElseThrow(() -> new RuntimeException("Marca no encontrada"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Marca no encontrada"));
             template.setBrand(brand);
         } else {
             template.setBrand(null);
@@ -139,7 +141,7 @@ public class TemplateService {
 
         if (requestDto.getCategoryId() != null) {
             Category category = categoryRepository.findById(requestDto.getCategoryId())
-                    .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
             template.setCategory(category);
         } else {
             template.setCategory(null);
@@ -153,10 +155,10 @@ public class TemplateService {
     public void deleteTemplate(Long id) {
         User currentUser = getAuthenticatedUser();
         Template template = templateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Plantilla no encontrada con ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Plantilla no encontrada con ID: " + id));
 
         if (!template.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("No tienes permisos para eliminar esta plantilla");
+            throw new ForbiddenOperationException("No tienes permisos para eliminar esta plantilla");
         }
 
         templateRepository.delete(template);
@@ -165,7 +167,7 @@ public class TemplateService {
     @Transactional
     public void incrementUsage(Long id) {
         Template template = templateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Plantilla no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Plantilla no encontrada"));
         template.setUsageCount(template.getUsageCount() + 1);
         templateRepository.save(template);
     }

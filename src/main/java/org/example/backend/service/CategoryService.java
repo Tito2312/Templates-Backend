@@ -1,6 +1,9 @@
 package org.example.backend.service;
 
 import org.example.backend.dto.CategoryDto;
+import org.example.backend.exception.BadRequestException;
+import org.example.backend.exception.ForbiddenOperationException;
+import org.example.backend.exception.ResourceNotFoundException;
 import org.example.backend.model.Category;
 import org.example.backend.model.User;
 import org.example.backend.repository.CategoryRepository;
@@ -52,7 +55,12 @@ public class CategoryService {
 
     public CategoryDto updateCategory(Long id, CategoryDto categoryDto) {
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada con ID: " + id));
+
+        // Antes el controlador devolvía 400 ante cualquier error; se mantiene para nombre vacío
+        if (categoryDto.getName() == null || categoryDto.getName().isBlank()) {
+            throw new BadRequestException("El nombre es obligatorio");
+        }
 
         category.setName(categoryDto.getName());
         Category updated = categoryRepository.save(category);
@@ -64,10 +72,10 @@ public class CategoryService {
     public void deleteCategory(Long id) {
         User currentUser = getAuthenticatedUser();
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada con ID: " + id));
 
         if (!category.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("No tienes permisos para eliminar esta categoría");
+            throw new ForbiddenOperationException("No tienes permisos para eliminar esta categoría");
         }
 
         categoryRepository.delete(category);

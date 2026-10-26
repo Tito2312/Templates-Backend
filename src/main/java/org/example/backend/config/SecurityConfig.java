@@ -1,5 +1,7 @@
 package org.example.backend.config;
 
+import org.example.backend.model.Role;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -20,10 +22,14 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private static final String ADMIN = Role.ROLE_ADMIN.name();
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final SecurityErrorHandler securityErrorHandler;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, SecurityErrorHandler securityErrorHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.securityErrorHandler = securityErrorHandler;
     }
 
     @Bean
@@ -37,14 +43,46 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(securityErrorHandler)   // 401 sin token válido
+                        .accessDeniedHandler(securityErrorHandler)        // 403 sin permiso
+                )
+                // El orden importa: gana la primera regla que coincide
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/users/login","/api/health", "/api/users/register", "/error").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users/login", "/api/users/register").permitAll()
+                        .requestMatchers("/api/health", "/error").permitAll()
+
+                        // Copiar una plantilla (incrementa su uso) está permitido a cualquier usuario autenticado
+                        .requestMatchers(HttpMethod.POST, "/api/templates/*/increment-usage").authenticated()
+
+                        // Escritura del catálogo e imágenes: solo administradores
+                        .requestMatchers(HttpMethod.POST, "/api/templates", "/api/templates/**",
+                                "/api/brands", "/api/brands/**", "/api/categories", "/api/categories/**",
+                                "/api/images/**").hasAuthority(ADMIN)
+                        .requestMatchers(HttpMethod.PUT, "/api/templates/**", "/api/brands/**", "/api/categories/**")
+                                .hasAuthority(ADMIN)
+                        .requestMatchers(HttpMethod.DELETE, "/api/templates/**", "/api/brands/**", "/api/categories/**")
+                                .hasAuthority(ADMIN)
+
+                        // Perfil propio para cualquier autenticado; datos de otros usuarios solo para admin
+                        .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
+                        .requestMatchers("/api/users/**").hasAuthority(ADMIN)
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    // Evita que Spring Boot registre el filtro JWT también como filtro de servlet global:
+    // solo debe ejecutarse dentro de la cadena de Spring Security.
+    @Bean
+    public FilterRegistrationBean<JwtAuthenticationFilter> jwtFilterRegistration(JwtAuthenticationFilter filter) {
+        FilterRegistrationBean<JwtAuthenticationFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean

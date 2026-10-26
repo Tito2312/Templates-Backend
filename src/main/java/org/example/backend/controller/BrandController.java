@@ -28,13 +28,8 @@ public class BrandController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateBrand(@PathVariable Long id, @RequestBody BrandDto brandDto) {
-        try {
-            BrandDto updatedBrand = brandService.updateBrand(id, brandDto);
-            return ResponseEntity.ok(updatedBrand);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<BrandDto> updateBrand(@PathVariable Long id, @RequestBody BrandDto brandDto) {
+        return ResponseEntity.ok(brandService.updateBrand(id, brandDto));
     }
 
     @DeleteMapping("/{id}")
