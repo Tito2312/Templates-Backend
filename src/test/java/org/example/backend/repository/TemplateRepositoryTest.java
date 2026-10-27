@@ -4,6 +4,8 @@ import org.example.backend.model.Brand;
 import org.example.backend.model.Category;
 import org.example.backend.model.Role;
 import org.example.backend.model.Template;
+import org.example.backend.model.TemplateUsage;
+import org.example.backend.model.TemplateUsageId;
 import org.example.backend.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,8 +15,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,42 +38,99 @@ class TemplateRepositoryTest {
     @Autowired private TemplateRepository templateRepository;
     @Autowired private BrandRepository brandRepository;
     @Autowired private CategoryRepository categoryRepository;
+    @Autowired private TemplateUsageRepository usageRepository;
 
+    private User admin;
+    private User other;
     private Brand bet;
     private Category chat;
+    private Template saludo;
+    private Template despedida;
+    private Template promo;
 
     @BeforeEach
     void setUp() {
-        User admin = em.persist(User.builder().username("admin").email("admin@test.com").password("x").role(Role.ROLE_ADMIN).build());
-        User other = em.persist(User.builder().username("otro").email("otro@test.com").password("x").role(Role.ROLE_USER).build());
+        admin = em.persist(User.builder().username("admin").email("admin@test.com").password("x").role(Role.ROLE_ADMIN).build());
+        other = em.persist(User.builder().username("otro").email("otro@test.com").password("x").role(Role.ROLE_USER).build());
 
         bet = em.persist(Brand.builder().name("BET593").user(admin).build());
         chat = em.persist(Category.builder().name("CHAT").user(admin).build());
 
         // Plantillas de dos creadores distintos: el catálogo debe mostrarlas todas
-        em.persist(template("Saludo", "Hola cliente", admin, bet, chat, 5));
-        em.persist(template("Despedida", "Gracias por escribir", other, null, chat, 1));
-        em.persist(template("Promo", "Bono de bienvenida", other, bet, null, 3));
+        saludo = em.persist(template("Saludo", "Hola cliente", admin, bet, chat));
+        despedida = em.persist(template("Despedida", "Gracias por escribir", other, null, chat));
+        promo = em.persist(template("Promo", "Bono de bienvenida", other, bet, null));
+
+        // Uso individual: solo el admin ha copiado plantillas
+        em.persist(usage(admin, saludo, 2));
+        em.persist(usage(admin, despedida, 5));
         em.flush();
     }
 
-    private Template template(String title, String content, User user, Brand brand, Category category, int usage) {
+    private Template template(String title, String content, User user, Brand brand, Category category) {
         return Template.builder().title(title).content(content).user(user)
-                .brand(brand).category(category).usageCount(usage).build();
+                .brand(brand).category(category).usageCount(0).build();
+    }
+
+    private TemplateUsage usage(User user, Template template, int count) {
+        return TemplateUsage.builder()
+                .id(new TemplateUsageId(user.getId(), template.getId()))
+                .usageCount(count)
+                .lastUsedAt(LocalDateTime.now())
+                .build();
     }
 
     private Page<Template> search(String query, String brand, String category) {
-        return templateRepository.searchTemplates(query, brand, category,
-                PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "usageCount")));
+        return templateRepository.searchTemplates(admin.getId(), query, brand, category, PageRequest.of(0, 10));
+    }
+
+    private List<String> titles(Page<Template> page) {
+        return page.getContent().stream().map(Template::getTitle).toList();
     }
 
     @Test
-    void searchReturnsTemplatesFromAllUsers() {
-        Page<Template> page = search(null, null, null);
+    void searchReturnsTemplatesFromAllUsersOrderedByPersonalUsage() {
+        Page<Template> forAdmin = search(null, null, null);
 
-        assertEquals(3, page.getTotalElements());
-        assertEquals(List.of("Saludo", "Promo", "Despedida"),
-                page.getContent().stream().map(Template::getTitle).toList());
+        assertEquals(3, forAdmin.getTotalElements());
+        // Admin: primero lo que más usa él; la que nunca usó va al final
+        assertEquals(List.of("Despedida", "Saludo", "Promo"), titles(forAdmin));
+
+        // Otro usuario sin usos: el uso del admin no le afecta, ordena por más reciente
+        Page<Template> forOther = templateRepository.searchTemplates(other.getId(), null, null, null, PageRequest.of(0, 10));
+        assertEquals(List.of("Promo", "Despedida", "Saludo"), titles(forOther));
+    }
+
+    @Test
+    void usageIsIncrementedPerUser() {
+        LocalDateTime now = LocalDateTime.now();
+
+        assertEquals(1, usageRepository.increment(admin.getId(), saludo.getId(), now));
+        assertEquals(0, usageRepository.increment(other.getId(), saludo.getId(), now)); // sin registro aún
+
+        List<TemplateUsage> adminUsage = usageRepository.findByUserAndTemplates(admin.getId(), List.of(saludo.getId(), promo.getId()));
+        assertEquals(1, adminUsage.size());
+        assertEquals(3, adminUsage.get(0).getUsageCount());
+        assertTrue(usageRepository.findByUserAndTemplates(other.getId(), List.of(saludo.getId())).isEmpty());
+
+        assertEquals(1, usageRepository.deleteByTemplateId(saludo.getId()));
+        assertTrue(usageRepository.findByUserAndTemplates(admin.getId(), List.of(saludo.getId())).isEmpty());
+    }
+
+    @Test
+    void searchPaginatesWithTotalPages() {
+        for (int i = 0; i < 10; i++) {
+            em.persist(template("Extra " + i, "x", admin, null, null));
+        }
+        em.flush();
+
+        Page<Template> first = templateRepository.searchTemplates(admin.getId(), null, null, null, PageRequest.of(0, 12));
+        Page<Template> second = templateRepository.searchTemplates(admin.getId(), null, null, null, PageRequest.of(1, 12));
+
+        assertEquals(13, first.getTotalElements());
+        assertEquals(2, first.getTotalPages());
+        assertEquals(12, first.getContent().size());
+        assertEquals(1, second.getContent().size());
     }
 
     @Test

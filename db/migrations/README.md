@@ -23,3 +23,4 @@ Cada cambio de esquema se versiona aquí y se ejecuta a mano en el SQL Editor de
 |---|---|---|---|
 | `V1_0_4_001__add_user_role.sql` | 1.0.4 | Columna `users.role` (`ROLE_USER`/`ROLE_ADMIN`) y admin inicial | Parcial: la columna se creó a mano. Ejecutar el script completo (idempotente) para el CHECK y el admin |
 | `V1_0_4_002__global_catalog.sql` | 1.0.4 | Fusión de marcas/categorías duplicadas e índices únicos de nombre | Pendiente (justo antes del despliegue, con backup) |
+| `V1_0_4_003__template_usage.sql` | 1.0.4 | Tabla `template_usage`: contador de uso por usuario | Pendiente (antes del despliegue) |

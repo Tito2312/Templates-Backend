@@ -12,15 +12,27 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TemplateRepository extends JpaRepository<Template, Long> {
 
-    // Catálogo global: busca en las plantillas de todos los usuarios.
-    // Marca y categoría se filtran por nombre (sin distinguir mayúsculas) o por id.
-    @Query("SELECT t FROM Template t " +
-            "LEFT JOIN t.brand b " +
-            "LEFT JOIN t.category c " +
+    String SEARCH_FILTERS =
             "WHERE (:query IS NULL OR :query = '' OR LOWER(t.title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(t.content) LIKE LOWER(CONCAT('%', :query, '%'))) " +
             "AND (:brandName IS NULL OR :brandName = '' OR LOWER(b.name) = LOWER(:brandName) OR CAST(b.id AS string) = :brandName) " +
-            "AND (:categoryName IS NULL OR :categoryName = '' OR LOWER(c.name) = LOWER(:categoryName) OR CAST(c.id AS string) = :categoryName)")
+            "AND (:categoryName IS NULL OR :categoryName = '' OR LOWER(c.name) = LOWER(:categoryName) OR CAST(c.id AS string) = :categoryName) ";
+
+    // Catálogo global: busca en las plantillas de todos los usuarios.
+    // Marca y categoría se filtran por nombre (sin distinguir mayúsculas) o por id.
+    // Orden personal: primero las que más usa el usuario que consulta, luego las más recientes.
+    // El orden va en la consulta, así que el Pageable debe ir sin Sort.
+    @Query(value = "SELECT t FROM Template t " +
+            "LEFT JOIN t.brand b " +
+            "LEFT JOIN t.category c " +
+            "LEFT JOIN TemplateUsage u ON u.id.templateId = t.id AND u.id.userId = :userId " +
+            SEARCH_FILTERS +
+            "ORDER BY COALESCE(u.usageCount, 0) DESC, t.updatedAt DESC, t.id DESC",
+            countQuery = "SELECT COUNT(t) FROM Template t " +
+                    "LEFT JOIN t.brand b " +
+                    "LEFT JOIN t.category c " +
+                    SEARCH_FILTERS)
     Page<Template> searchTemplates(
+            @Param("userId") Long userId,
             @Param("query") String query,
             @Param("brandName") String brandName,
             @Param("categoryName") String categoryName,

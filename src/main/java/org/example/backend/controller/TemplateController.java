@@ -26,7 +26,7 @@ public class TemplateController {
             @RequestParam(required = false, defaultValue = "") String brand,
             @RequestParam(required = false, defaultValue = "") String category,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "9") int size) {
+            @RequestParam(defaultValue = "12") int size) {
 
         PageResponseDto<TemplateResponseDto> response = templateService.searchTemplates(query, brand, category, page, size);
         return ResponseEntity.ok(response);
