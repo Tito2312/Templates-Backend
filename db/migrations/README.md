@@ -17,6 +17,8 @@ Cada cambio de esquema se versiona aquí y se ejecuta a mano en el SQL Editor de
 > El SQL Editor de Supabase solo muestra el resultado de la **última** sentencia ejecutada.
 > Para ver una vista previa o una verificación, selecciona solo esa consulta y ejecútala sola.
 
+Pasos completos de la 1.0.4 (backup, verificaciones, despliegue y vuelta atrás): [`DEPLOY_1.0.4.md`](DEPLOY_1.0.4.md).
+
 ## Registro
 
 | Script | Versión | Descripción | Ejecutado en producción |
