@@ -1,11 +1,13 @@
 package org.example.backend.controller;
 
+import jakarta.validation.Valid;
 import org.example.backend.dto.AuthResponseDto;
 import org.example.backend.dto.LoginRequestDto;
 import org.example.backend.dto.RegisterRequestDto;
 import org.example.backend.dto.UserDto;
 import org.example.backend.service.UserService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,41 +21,31 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequestDto registerRequest) {
-        try {
-            System.out.println("--> [REGISTER] Intentando registrar a: " + registerRequest.getEmail());
-
-            AuthResponseDto response = userService.register(
-                    registerRequest.getUsername(),
-                    registerRequest.getEmail(),
-                    registerRequest.getPassword()
-            );
-
-            System.out.println("--> [REGISTER SUCCESS] Token generado: " +
-                    (response != null && response.getToken() != null));
-
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            System.err.println("--> [REGISTER ERROR]: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<AuthResponseDto> register(@Valid @RequestBody RegisterRequestDto registerRequest) {
+        AuthResponseDto response = userService.register(
+                registerRequest.getUsername(),
+                registerRequest.getEmail(),
+                registerRequest.getPassword()
+        );
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequestDto loginRequest) {
-        try {
-            AuthResponseDto response = userService.login(
-                    loginRequest.getEmail(),
-                    loginRequest.getPassword()
-            );
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            System.err.println("--> [LOGIN ERROR]: " + e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<AuthResponseDto> login(@Valid @RequestBody LoginRequestDto loginRequest) {
+        AuthResponseDto response = userService.login(
+                loginRequest.getEmail(),
+                loginRequest.getPassword()
+        );
+        return ResponseEntity.ok(response);
     }
 
+    // Datos del usuario autenticado (incluye el rol vigente en BD)
+    @GetMapping("/me")
+    public ResponseEntity<UserDto> getCurrentUser(Authentication authentication) {
+        return ResponseEntity.ok(userService.getUserByEmail(authentication.getName()));
+    }
+
+    // Restringido a ROLE_ADMIN en SecurityConfig
     @GetMapping("/{id}")
     public ResponseEntity<UserDto> getUserInfo(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
